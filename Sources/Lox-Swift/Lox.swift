@@ -46,9 +46,10 @@ public class Lox: ErrorReporting{
         let scanner = Scanner(source: source, errorReporting: self)
         let tokens = scanner.scanTokens()
         
-        for token in tokens {
-            print(token.lexeme)
-        }
+        let parser = Parser(tokens: tokens, errorReporting: self)
+        let expression = parser.parse()
+        guard(!hadError) else {return}
+        
     }
     
     func error (_ line: Int, _ message: String){
@@ -58,5 +59,13 @@ public class Lox: ErrorReporting{
     func report(_ line: Int, _ at: String, _ message: String){
         print("[line \(line)] Error \(at): \(message)")
         hadError = true
+    }
+    
+    func error(at token: Token, message: String) {
+        if (token.type == .eof) {
+            report(token.line, " at end", message)
+        } else {
+            report(token.line, " at '\(token.lexeme)'", message)
+        }
     }
 }
