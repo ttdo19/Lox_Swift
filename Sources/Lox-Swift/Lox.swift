@@ -9,6 +9,8 @@ import Foundation
 
 public class Lox: ErrorReporting{
     private(set) var hadError = false
+    private(set) var hadRuntimeError = false
+    private let interpreter: Interpreter
     
     public func runFile(_ fileName: String) {
         do {
@@ -16,6 +18,9 @@ public class Lox: ErrorReporting{
             run(content)
             if hadError {
                 exit(EX_HAS_ERROR)
+            }
+            if hadRuntimeError {
+                exit(EX_HAS_RUNTIME_ERROR)
             }
         } catch {
             print("Unable to read this file \(fileName): \(error.localizedDescription)")
@@ -25,6 +30,8 @@ public class Lox: ErrorReporting{
     
     public init(hadError: Bool = false) {
         self.hadError = hadError
+        self.interpreter = Interpreter()
+        interpreter.errorReporting = self
     }
     
     public func runPrompt() {
@@ -50,6 +57,7 @@ public class Lox: ErrorReporting{
         let expression = parser.parse()
         guard(!hadError) else {return}
         
+        interpreter.interpret(expression!)
     }
     
     func error (_ line: Int, _ message: String){
@@ -67,5 +75,15 @@ public class Lox: ErrorReporting{
         } else {
             report(token.line, " at '\(token.lexeme)'", message)
         }
+    }
+    
+    func runtimeError(_ runtimeError: RuntimeError) {
+        switch runtimeError {
+        case .mismatchedType(let token, let message):
+            error(at: token, message: message)
+        case .unexpected(let message):
+            print(message)
+        }
+        hadRuntimeError = true
     }
 }
