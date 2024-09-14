@@ -10,4 +10,5 @@ import Foundation
 enum RuntimeError: Error {
     case mismatchedType(Token, String)
     case unexpected(String)
+    case undefinedVariable(Token, String)
 }

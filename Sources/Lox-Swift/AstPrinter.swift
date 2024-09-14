@@ -25,10 +25,21 @@ public class AstPrinter {
         return builder
     }
     
-    
 }
 
 extension AstPrinter: ExprVisitor {
+    func visitLogicalExpr(_ expr: Expr.Logical) throws -> String {
+        try parenthesize(name: expr.op.lexeme, exprs: expr.left, expr.right)
+    }
+    
+    func visitAssignExpr(_ expr: Expr.Assign) throws -> String {
+        expr.name.lexeme
+    }
+    
+    func visitVariableExpr(_ expr: Expr.Variable) throws -> String {
+        expr.name.lexeme
+    }
+    
     func visitGroupingExpr(_ expr: Expr.Grouping) throws -> String {
         try parenthesize(name: "group", exprs: expr.expression)
     }

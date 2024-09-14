@@ -20,16 +20,183 @@ class Parser {
         self.errorReporting = errorReporting
     }
     
-    func parse() -> Expr? {
+    func parse() -> [Stmt] {
+        var statements = [Stmt]()
+        while (!isAtEnd()) {
+            if let declaration = declaration() {
+                statements.append(declaration)
+            }
+        }
+        return statements
+    }
+    
+    func expression() throws -> Expr {
+        return try assignment()
+    }
+    
+    func declaration() -> Stmt? {
         do {
-            return try expression()
+            if match([.Var]) {
+                return try varDeclaration()
+            }
+            return try statement()
         } catch {
+            synchronize()
             return nil
         }
     }
     
-    func expression() throws -> Expr {
-        return try equality()
+    func statement() throws -> Stmt {
+        if (match([.For])) {
+            return try forStatement()
+        }
+        if (match([.If])) {
+            return try ifStatement()
+        }
+        if (match([.Print])) {
+            return try printStatement()
+        }
+        if match([.While]) {
+            return try whileStatement()
+        }
+        if (match([.leftBrace])) {
+            return try Stmt.Block(statements: block())
+        }
+        return try expressionStatement()
+    }
+    
+    func forStatement() throws -> Stmt {
+        try consume(type: .leftParen, message: "Expect '(' after 'for'.")
+        
+        var initializer : Stmt?
+        if (match([.semicolon])) {
+            initializer = nil
+        } else if (match([.Var])) {
+            initializer = try varDeclaration()
+        } else {
+            initializer = try expressionStatement()
+        }
+        
+        var condition: Expr? = nil
+        if (!check(.semicolon)) {
+            condition = try expression()
+        }
+        try consume(type: .semicolon, message: "Expect ';' after loop condition.")
+        
+        var increment: Expr? = nil
+        if (!check(.rightParen)) {
+            increment = try expression()
+        }
+        try consume(type: .rightParen, message: "Expect ')' after for clauses.")
+        
+        var body = try statement()
+        
+        if let increment = increment {
+            body = Stmt.Block(statements: [body, Stmt.Expression(expression: increment)])
+        }
+        
+        if (condition == nil) {condition = Expr.Literal(value: true)}
+        body = Stmt.While(condition: condition!, body: body)
+        
+        if let initializer = initializer {
+            body = Stmt.Block(statements: [initializer, body])
+        }
+        return body
+    }
+    
+    func whileStatement() throws-> Stmt {
+        try consume(type: .leftParen, message: "Expect '(' after 'while'.")
+        let condition = try expression()
+        try consume(type: .rightParen, message: "Expect ')' after condition.")
+        let body = try statement()
+        
+        return Stmt.While(condition: condition, body: body)
+    }
+    
+    func ifStatement() throws -> Stmt {
+        try consume(type: .leftParen, message: "Expect '(' after 'if'.")
+        let condition = try expression()
+        try consume(type: .rightParen, message: "Expect ')' after if condition.")
+        
+        let thenBranch = try statement()
+        var elseBranch : Stmt? = nil
+        if match([.Else]) {
+            elseBranch = try statement()
+        }
+        return Stmt.If(condition: condition, thenBranch: thenBranch, elseBranch: elseBranch)
+    }
+    
+    func printStatement() throws -> Stmt {
+        let value = try expression()
+        try consume(type: .semicolon, message: "Expect ';' after value.")
+        return Stmt.Print(expression: value)
+    }
+    
+    func varDeclaration() throws -> Stmt {
+        let name = try consume(type: .identifier, message: "Expect variable name.")
+        var initializer : Expr? = nil
+        if match([.equal]) {
+            initializer = try expression()
+        }
+        try consume(type: .semicolon, message: "Expect ';' after variable declaration.")
+        return Stmt.Var(name: name, initializer: initializer)
+    }
+    
+    func expressionStatement() throws-> Stmt {
+        let expr = try expression()
+        try consume(type: .semicolon, message: "Expect ';' after expression.")
+        return Stmt.Expression(expression: expr)
+    }
+    
+    func block() throws ->  [Stmt] {
+        var statements = [Stmt]()
+        
+        while (!check(.rightBrace) && !isAtEnd()) {
+            if let declaration = declaration() {
+                statements.append(declaration)
+            }
+        }
+        
+        try consume(type: .rightBrace, message: "Expect '}' after block.")
+        return statements
+    }
+    
+    func assignment() throws -> Expr {
+        let expr = try or()
+        
+        if (match([.equal])) {
+            let equals = previous()
+            let value = try assignment()
+            
+            if let expr = expr as? Expr.Variable {
+                let name = expr.name
+                return Expr.Assign(name: name, value: value)
+            } 
+            errorReporting.error(at: equals, message: "Invalid assignment target.")
+        }
+        return expr
+    }
+    
+    func or() throws -> Expr {
+        var expr = try and()
+        
+        while (match([.Or])) {
+            let op = previous()
+            let right = try and()
+            expr = Expr.Logical(left: expr, op: op, right: right)
+        }
+        return expr
+    }
+    
+    func and() throws -> Expr {
+        var expr = try equality()
+        
+        while (match([.And])) {
+            let op = previous()
+            let right = try equality()
+            expr = Expr.Logical(left: expr, op: op, right: right)
+        }
+        return expr
     }
     
     func equality() throws ->  Expr {
@@ -99,7 +266,9 @@ class Parser {
         if match([.number, .string]) {
             return Expr.Literal(value: previous().literal)
         }
-        
+        if match([.identifier]) {
+            return Expr.Variable(name: previous())
+        }
         if match([.leftParen]) {
             let expr = try expression()
             try consume(type: .rightParen, message: "Expect ')' after expression.")

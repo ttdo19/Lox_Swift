@@ -13,11 +13,5 @@ guard (CommandLine.arguments.count == 2) else {
 }
 
 let generateAst = GenerateAst()
-generateAst.defineAst(outputDir: CommandLine.arguments[1], baseName: "Expr", types: [
-    "Binary   : Expr left, Token op, Expr right",
-    "Grouping : Expr expression",
-    "Literal  : Any? value",
-    "Unary    : Token op, Expr right"
-])
-
+generateAst.generateAst()
 

@@ -54,10 +54,10 @@ public class Lox: ErrorReporting{
         let tokens = scanner.scanTokens()
         
         let parser = Parser(tokens: tokens, errorReporting: self)
-        let expression = parser.parse()
+        let statements = parser.parse()
         guard(!hadError) else {return}
         
-        interpreter.interpret(expression!)
+        interpreter.interpret(statements)
     }
     
     func error (_ line: Int, _ message: String){
@@ -83,6 +83,8 @@ public class Lox: ErrorReporting{
             error(at: token, message: message)
         case .unexpected(let message):
             print(message)
+        case .undefinedVariable(let token, let message):
+            print("\(message) at line \(token.line)")
         }
         hadRuntimeError = true
     }

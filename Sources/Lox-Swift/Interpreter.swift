@@ -9,17 +9,50 @@ import Foundation
 
 class Interpreter {
     var errorReporting: ErrorReporting!
-    
-    func interpret(_ expr: Expr) {
+    var environment = Environment()
+    func interpret(_ statements: [Stmt]) {
         do {
-            let value = try evaluate(expr)
-            print(stringify(value))
+            for statement in statements {
+                try execute(statement)
+            }
         } catch let error as RuntimeError {
             errorReporting.runtimeError(error)
         } catch {
             let unexpectedError = RuntimeError.unexpected("Unexpected runtime error: \(error.localizedDescription)")
             errorReporting.runtimeError(unexpectedError)
         } 
+    }
+    
+    func evaluate(_ expr: Expr) throws -> Any? {
+        return try expr.accept(visitor: self)
+    }
+    
+    func stringify(_ object: Any?) -> String {
+        guard object != nil else {return "nil"}
+        
+        if let obj = object as? Double {
+            var text = String(obj)
+            text = text.hasSuffix(".0") ? String(text.dropLast(2)): text
+            return text
+        }
+        return String(describing: object)
+    }
+    
+    func execute(_ stmt: Stmt) throws {
+        try stmt.accept(visitor: self)
+    }
+    
+    func executeBlock(statements: [Stmt], environment: Environment) throws {
+        let previous = self.environment
+        
+        self.environment = environment
+        defer {
+            self.environment = previous
+        }
+        
+        for statement in statements {
+            try execute(statement)
+        }
     }
 }
 
@@ -28,12 +61,19 @@ extension Interpreter: ExprVisitor {
         return try evaluate(expr.expression)
     }
     
-    func evaluate(_ expr: Expr) throws -> Any? {
-        return try expr.accept(visitor: self)
-    }
-    
     func visitLiteralExpr(_ expr: Expr.Literal) throws -> Any? {
         return expr.value
+    }
+    
+    func visitLogicalExpr(_ expr: Expr.Logical) throws -> Any? {
+        let left = try evaluate(expr.left)
+        
+        if (expr.op.type == TokenType.Or) {
+            if (isTruthy(left)) { return left }
+        } else {
+            if (!isTruthy(left)) {return left}
+        }
+        return try evaluate(expr.right)
     }
     
     func visitUnaryExpr(_ expr: Expr.Unary) throws -> Any? {
@@ -49,6 +89,16 @@ extension Interpreter: ExprVisitor {
             break
         }
         return nil
+    }
+    
+    func visitVariableExpr(_ expr: Expr.Variable) throws -> Any? {
+        return try environment.get(name: expr.name)
+    }
+    
+    func visitAssignExpr(_ expr: Expr.Assign) throws -> Any? {
+        let value = try evaluate(expr.value)
+        try environment.assign(expr.name, value)
+        return value
     }
     
     func isTruthy(_ object: Any?) -> Bool {
@@ -121,14 +171,44 @@ extension Interpreter: ExprVisitor {
         throw RuntimeError.mismatchedType(op, "Operand must be numbers.")
     }
     
-    func stringify(_ object: Any?) -> String {
-        guard object != nil else {return "nil"}
-        
-        if let obj = object as? Double {
-            var text = String(obj)
-            text = text.hasSuffix(".0") ? String(text.dropLast(2)): text
-            return text
-        }
-        return String(describing: object)
+    
+}
+
+extension Interpreter: StmtVisitor {
+    
+    func visitExpressionStmt(_ stmt: Stmt.Expression) throws -> Void {
+        let _ = try evaluate(stmt.expression)
     }
+    
+    func visitIfStmt(_ stmt: Stmt.If) throws -> Void {
+        if (isTruthy(try evaluate(stmt.condition))) {
+            try execute(stmt.thenBranch)
+        } else if let elseBranch = stmt.elseBranch {
+            try execute(elseBranch)
+        }
+    }
+    
+    func visitPrintStmt(_ stmt: Stmt.Print) throws -> Void {
+        let value = try evaluate(stmt.expression)
+        print(stringify(value))
+    }
+    
+    func visitVarStmt(_ stmt: Stmt.Var) throws -> Void {
+        var value : Any? = nil
+        if let val = stmt.initializer {
+            value = try evaluate(val)
+        }
+        environment.define(name: stmt.name.lexeme, value: value)
+    }
+    
+    func visitWhileStmt(_ stmt: Stmt.While) throws -> Void {
+        while (isTruthy(try evaluate(stmt.condition))) {
+            try execute(stmt.body)
+        }
+    }
+    
+    func visitBlockStmt(_ stmt: Stmt.Block) throws -> () {
+        try executeBlock(statements: stmt.statements, environment: Environment(enclosing: environment))
+    }
+    
 }
