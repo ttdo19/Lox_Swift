@@ -4,8 +4,10 @@ protocol StmtVisitor {
     associatedtype StmtVisitorReturnType
     func visitBlockStmt (_ stmt: Stmt.Block) throws -> StmtVisitorReturnType
     func visitExpressionStmt (_ stmt: Stmt.Expression) throws -> StmtVisitorReturnType
+    func visitFunctionStmt (_ stmt: Stmt.Function) throws -> StmtVisitorReturnType
     func visitIfStmt (_ stmt: Stmt.If) throws -> StmtVisitorReturnType
     func visitPrintStmt (_ stmt: Stmt.Print) throws -> StmtVisitorReturnType
+    func visitReturnStmt (_ stmt: Stmt.Return) throws -> StmtVisitorReturnType
     func visitVarStmt (_ stmt: Stmt.Var) throws -> StmtVisitorReturnType
     func visitWhileStmt (_ stmt: Stmt.While) throws -> StmtVisitorReturnType
 }
@@ -35,6 +37,21 @@ class Stmt {
             return try visitor.visitExpressionStmt(self)
         }
     }
+    class Function: Stmt {
+        let name: Token
+        let params: [Token]
+        let body: [Stmt]
+
+        init(name: Token, params: [Token], body: [Stmt]) {
+            self.name = name
+            self.params = params
+            self.body = body
+        }
+
+        override func accept<V: StmtVisitor, R>(visitor: V) throws -> R where R == V.StmtVisitorReturnType {
+            return try visitor.visitFunctionStmt(self)
+        }
+    }
     class If: Stmt {
         let condition: Expr
         let thenBranch: Stmt
@@ -59,6 +76,19 @@ class Stmt {
 
         override func accept<V: StmtVisitor, R>(visitor: V) throws -> R where R == V.StmtVisitorReturnType {
             return try visitor.visitPrintStmt(self)
+        }
+    }
+    class Return: Stmt {
+        let keyword: Token
+        let value: Expr?
+
+        init(keyword: Token, value: Expr?) {
+            self.keyword = keyword
+            self.value = value
+        }
+
+        override func accept<V: StmtVisitor, R>(visitor: V) throws -> R where R == V.StmtVisitorReturnType {
+            return try visitor.visitReturnStmt(self)
         }
     }
     class Var: Stmt {

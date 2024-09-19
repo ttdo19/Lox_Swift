@@ -57,6 +57,9 @@ public class Lox: ErrorReporting{
         let statements = parser.parse()
         guard(!hadError) else {return}
         
+        let resolver = Resolver(interpreter: interpreter, errorReporting: self)
+        resolver.resolve(statements)
+        if (hadError) { return }
         interpreter.interpret(statements)
     }
     
@@ -79,12 +82,13 @@ public class Lox: ErrorReporting{
     
     func runtimeError(_ runtimeError: RuntimeError) {
         switch runtimeError {
-        case .mismatchedType(let token, let message):
+        case .mismatchedType(let token, let message): fallthrough
+        case .undefinedVariable(let token, let message): fallthrough
+        case .incorrectNumberArguments(let token, let message): fallthrough
+        case .notCallable(let token, let message):
             error(at: token, message: message)
         case .unexpected(let message):
             print(message)
-        case .undefinedVariable(let token, let message):
-            print("\(message) at line \(token.line)")
         }
         hadRuntimeError = true
     }

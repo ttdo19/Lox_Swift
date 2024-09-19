@@ -4,6 +4,7 @@ protocol ExprVisitor {
     associatedtype ExprVisitorReturnType
     func visitAssignExpr (_ expr: Expr.Assign) throws -> ExprVisitorReturnType
     func visitBinaryExpr (_ expr: Expr.Binary) throws -> ExprVisitorReturnType
+    func visitCallExpr (_ expr: Expr.Call) throws -> ExprVisitorReturnType
     func visitGroupingExpr (_ expr: Expr.Grouping) throws -> ExprVisitorReturnType
     func visitLiteralExpr (_ expr: Expr.Literal) throws -> ExprVisitorReturnType
     func visitLogicalExpr (_ expr: Expr.Logical) throws -> ExprVisitorReturnType
@@ -40,6 +41,21 @@ class Expr {
 
         override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturnType {
             return try visitor.visitBinaryExpr(self)
+        }
+    }
+    class Call: Expr {
+        let callee: Expr
+        let paren: Token
+        let arguments: [Expr]
+
+        init(callee: Expr, paren: Token, arguments: [Expr]) {
+            self.callee = callee
+            self.paren = paren
+            self.arguments = arguments
+        }
+
+        override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturnType {
+            return try visitor.visitCallExpr(self)
         }
     }
     class Grouping: Expr {
@@ -102,5 +118,15 @@ class Expr {
         override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturnType {
             return try visitor.visitVariableExpr(self)
         }
+    }
+}
+
+extension Expr: Hashable {
+    static func == (lhs: Expr, rhs: Expr) -> Bool {
+        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        return ObjectIdentifier(self).hash(into: &hasher)
     }
 }

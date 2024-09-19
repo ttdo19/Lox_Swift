@@ -28,6 +28,10 @@ public class AstPrinter {
 }
 
 extension AstPrinter: ExprVisitor {
+    func visitCallExpr(_ expr: Expr.Call) throws -> String {
+        try parenthesize(name: "call", exprs: expr.callee)
+    }
+    
     func visitLogicalExpr(_ expr: Expr.Logical) throws -> String {
         try parenthesize(name: expr.op.lexeme, exprs: expr.left, expr.right)
     }

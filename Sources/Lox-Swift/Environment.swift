@@ -39,4 +39,22 @@ class Environment {
     func define(name: String, value: Any?) {
         values[name] = value
     }
+    
+    func ancestor(_ distance: Int) throws -> Environment {
+        var environment = self
+        for _ in 0..<distance {
+            if let env = environment.enclosing {
+                environment = env
+            }
+        }
+        return environment
+    }
+    
+    func getAt(_ distance: Int, _ name: String) throws -> Any? {
+        return try ancestor(distance).values[name] as Any?
+    }
+    
+    func assignAt(_ distance: Int,_ name: Token, _ value: Any?) throws {
+        try ancestor(distance).values[name.lexeme] = value
+    }
 }

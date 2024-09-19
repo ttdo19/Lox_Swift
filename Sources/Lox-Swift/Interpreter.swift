@@ -6,10 +6,31 @@
 //
 
 import Foundation
+typealias Local = Dictionary<Expr, Int>
 
 class Interpreter {
+    static func addClockToGlobals() -> Environment {
+        let globalEnvironment = Environment()
+        class ClockCallable : LoxCallable {
+            let arity = 0
+            let description: String = "<native fn>"
+            func call(interpreter: Interpreter, arguments: [Any?]) throws -> Any? {
+                return Double(Date().timeIntervalSince1970)
+            }
+        }
+        globalEnvironment.define(name: "clock", value: ClockCallable())
+        return globalEnvironment
+    }
+    
     var errorReporting: ErrorReporting!
-    var environment = Environment()
+    var globals = addClockToGlobals()
+    var environment: Environment
+    var locals = Local()
+    
+    init() {
+        environment = globals
+    }
+    
     func interpret(_ statements: [Stmt]) {
         do {
             for statement in statements {
@@ -40,6 +61,10 @@ class Interpreter {
     
     func execute(_ stmt: Stmt) throws {
         try stmt.accept(visitor: self)
+    }
+    
+    func resolve(_ expr: Expr,_ depth: Int) {
+        locals[expr] = depth
     }
     
     func executeBlock(statements: [Stmt], environment: Environment) throws {
@@ -92,12 +117,24 @@ extension Interpreter: ExprVisitor {
     }
     
     func visitVariableExpr(_ expr: Expr.Variable) throws -> Any? {
-        return try environment.get(name: expr.name)
+        return try lookUpVariable(expr.name, expr)
+    }
+    
+    func lookUpVariable(_ name: Token, _ expr: Expr) throws -> Any? {
+        if let distance = locals[expr] {
+            return try environment.getAt(distance, name.lexeme)
+        } else {
+            return try globals.get(name: name)
+        }
     }
     
     func visitAssignExpr(_ expr: Expr.Assign) throws -> Any? {
         let value = try evaluate(expr.value)
-        try environment.assign(expr.name, value)
+        if let distance = locals[expr] {
+            try environment.assignAt(distance, expr.name, value)
+        } else {
+            try globals.assign(expr.name, value)
+        }
         return value
     }
     
@@ -151,6 +188,24 @@ extension Interpreter: ExprVisitor {
         return nil
     }
     
+    func visitCallExpr(_ expr: Expr.Call) throws -> Any? {
+        let callee = try evaluate(expr.callee)
+        
+        var arguments = [Any?]()
+        for argument in expr.arguments {
+            arguments.append(try evaluate(argument))
+        }
+        
+        if let function = callee as? LoxCallable {
+            if (arguments.count != function.arity) {
+                throw RuntimeError.incorrectNumberArguments(expr.paren, "Expected \(function.arity) arguments but got \(arguments.count).")
+            }
+            return try function.call(interpreter: self, arguments: arguments)
+        } else {
+            throw RuntimeError.notCallable(expr.paren, "Can only call functions and classes.")
+        }
+    }
+    
     func isEqual(_ a: Any?, _ b: Any?) -> Bool {
         if (a == nil && b == nil) { return true }
         else if (a == nil) {return false}
@@ -180,6 +235,11 @@ extension Interpreter: StmtVisitor {
         let _ = try evaluate(stmt.expression)
     }
     
+    func visitFunctionStmt(_ stmt: Stmt.Function) throws -> Void {
+        let function = LoxFunction(declaration: stmt, closure: environment)
+        environment.define(name: stmt.name.lexeme, value: function)
+    }
+    
     func visitIfStmt(_ stmt: Stmt.If) throws -> Void {
         if (isTruthy(try evaluate(stmt.condition))) {
             try execute(stmt.thenBranch)
@@ -191,6 +251,14 @@ extension Interpreter: StmtVisitor {
     func visitPrintStmt(_ stmt: Stmt.Print) throws -> Void {
         let value = try evaluate(stmt.expression)
         print(stringify(value))
+    }
+    
+    func visitReturnStmt(_ stmt: Stmt.Return) throws -> Void {
+        var value : Any? = nil
+        if let val = stmt.value {
+            value = try evaluate(val)
+        }
+        throw Return.functionReturn(value)
     }
     
     func visitVarStmt(_ stmt: Stmt.Var) throws -> Void {

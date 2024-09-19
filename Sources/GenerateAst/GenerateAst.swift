@@ -12,8 +12,9 @@ typealias Field = (name: String, type: String)
 class GenerateAst {
     func generateAst() {
         defineAst(outputDir: CommandLine.arguments[1], baseName: "Expr", types: [
-            "Assign   : Token name, Expr value",
+            "Assign     : Token name, Expr value",
             "Binary     : Expr left, Token op, Expr right",
+            "Call       : Expr callee, Token paren, [Expr] arguments",
             "Grouping   : Expr expression",
             "Literal    : Any? value",
             "Logical    : Expr left, Token op, Expr right",
@@ -23,8 +24,10 @@ class GenerateAst {
         defineAst(outputDir: CommandLine.arguments[1], baseName: "Stmt", types: [
             "Block      : [Stmt] statements",
             "Expression : Expr expression",
+            "Function   : Token name, [Token] params, [Stmt] body",
             "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
             "Print      : Expr expression",
+            "Return     : Token keyword, Expr? value",
             "Var        : Token name, Expr? initializer",
             "While      : Expr condition, Stmt body"
         ])
