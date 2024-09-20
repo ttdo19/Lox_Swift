@@ -15,14 +15,19 @@ class GenerateAst {
             "Assign     : Token name, Expr value",
             "Binary     : Expr left, Token op, Expr right",
             "Call       : Expr callee, Token paren, [Expr] arguments",
+            "Get        : Expr object, Token name",
             "Grouping   : Expr expression",
             "Literal    : Any? value",
             "Logical    : Expr left, Token op, Expr right",
+            "Set        : Expr object, Token name, Expr value",
+            "Super      : Token keyword, Token method",
+            "This       : Token keyword",
             "Unary      : Token op, Expr right",
             "Variable   : Token name"
         ])
         defineAst(outputDir: CommandLine.arguments[1], baseName: "Stmt", types: [
             "Block      : [Stmt] statements",
+            "Class      : Token name, Expr.Variable? superclass, [Stmt.Function] methods",
             "Expression : Expr expression",
             "Function   : Token name, [Token] params, [Stmt] body",
             "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",

@@ -10,13 +10,18 @@ import Foundation
 typealias Scope = Dictionary<String, Bool>
 
 enum FunctionType {
-    case none, function
+    case none, function, method, initializer
+}
+
+enum ClassType {
+    case none, klass, subclass
 }
 
 class Resolver {
     let interpreter: Interpreter
     let errorReporting: ErrorReporting
     var currentFunction = FunctionType.none
+    var currentClass = ClassType.none
     var scopes = [Scope]()
     
     init(interpreter: Interpreter, errorReporting: ErrorReporting) {
@@ -105,6 +110,10 @@ extension Resolver: ExprVisitor {
         }
     }
     
+    func visitGetExpr(_ expr: Expr.Get) throws -> Void {
+        try resolve(expr.object)
+    }
+    
     func visitGroupingExpr(_ expr: Expr.Grouping) throws -> Void {
         try resolve(expr.expression)
     }
@@ -116,6 +125,27 @@ extension Resolver: ExprVisitor {
     func visitLogicalExpr(_ expr: Expr.Logical) throws -> Void {
         try resolve(expr.left)
         try resolve(expr.right)
+    }
+    
+    func visitSetExpr(_ expr: Expr.Set) throws -> Void {
+        try resolve(expr.value)
+        try resolve(expr.object)
+    }
+    
+    func visitSuperExpr(_ expr: Expr.Super) throws -> Void {
+        if (currentClass == ClassType.none) {
+            errorReporting.error(at: expr.keyword, message: "Can't use 'super' outside of a class.")
+        } else if (currentClass  != ClassType.subclass)  {
+            errorReporting.error(at: expr.keyword, message: "Can't use 'super' in a class with no superclass.")
+        }
+        resolveLocal(expr, expr.keyword)
+    }
+    
+    func visitThisExpr(_ expr: Expr.This) throws -> Void {
+        if (currentClass == ClassType.none) {
+            errorReporting.error(at: expr.keyword, message: "Can't use 'this' outside of a class.")
+        }
+        resolveLocal(expr, expr.keyword)
     }
     
     func visitUnaryExpr(_ expr: Expr.Unary) throws -> Void {
@@ -159,6 +189,9 @@ extension Resolver: StmtVisitor {
             errorReporting.error(at: stmt.keyword, message: "Can't return from top-level code.")
         }
         if let value = stmt.value {
+            if (currentFunction == FunctionType.initializer) {
+                errorReporting.error(at: stmt.keyword, message: "Can't return a value from an initializer.")
+            }
             try resolve(value)
         }
     }
@@ -180,5 +213,44 @@ extension Resolver: StmtVisitor {
         beginScope()
         resolve(stmt.statements)
         endScope()
+    }
+    
+    func visitClassStmt(_ stmt: Stmt.Class) throws -> Void {
+        let enclosingClass = currentClass
+        currentClass = ClassType.klass
+        
+        declare(stmt.name)
+        define(stmt.name)
+        
+        if let superclass = stmt.superclass {
+            if stmt.name.lexeme == superclass.name.lexeme {
+                errorReporting.error(at: superclass.name, message: "A class can't inherit from itself.")
+            }
+            currentClass = ClassType.subclass
+            try resolve(superclass)
+        }
+        
+        if (stmt.superclass != nil) {
+            beginScope()
+            scopes[scopes.count-1]["super"] = true
+        }
+        
+        beginScope()
+        scopes[scopes.count-1]["this"] = true
+        
+        for method in stmt.methods {
+            var declaration = FunctionType.method
+            if (method.name.lexeme == "init") {
+                declaration = FunctionType.initializer
+            }
+            try resolveFunction(method, declaration)
+        }
+        
+        endScope()
+        
+        if (stmt.superclass != nil) {
+            endScope()
+        }
+        currentClass = enclosingClass
     }
 }

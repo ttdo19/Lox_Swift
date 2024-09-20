@@ -36,6 +36,9 @@ class Parser {
     
     func declaration() -> Stmt? {
         do {
+            if match([.Class]) {
+                return try classDeclaration()
+            }
             if match([.Fun]) {
                 return try function("function")
             }
@@ -47,6 +50,23 @@ class Parser {
             synchronize()
             return nil
         }
+    }
+    
+    func classDeclaration() throws -> Stmt {
+        let name = try consume(type: .identifier, message: "Expect class name.")
+        var superclass : Expr.Variable? = nil
+        if (match([.less])) {
+            try consume(type: .identifier, message: "Expect superclass name.")
+            superclass = Expr.Variable(name: previous())
+        }
+        try consume(type: .leftBrace, message: "Expect '{' before class body.")
+        
+        var methods = [Stmt.Function]()
+        while (!check(.rightBrace) && !isAtEnd()) {
+            methods.append(try function("method"))
+        }
+        try consume(type: .rightBrace, message: "Expect '}' after class body.")
+        return Stmt.Class(name: name, superclass: superclass, methods: methods)
     }
     
     func statement() throws -> Stmt {
@@ -203,10 +223,12 @@ class Parser {
             let equals = previous()
             let value = try assignment()
             
-            if let expr = expr as? Expr.Variable {
-                let name = expr.name
+            if let exprVar = expr as? Expr.Variable {
+                let name = exprVar.name
                 return Expr.Assign(name: name, value: value)
-            } 
+            } else if let exprGet = expr as? Expr.Get {
+                return Expr.Set(object: exprGet.object, name: exprGet.name, value: value)
+            }
             errorReporting.error(at: equals, message: "Invalid assignment target.")
         }
         return expr
@@ -311,6 +333,9 @@ class Parser {
         while (true) {
             if (match([.leftParen])) {
                 expr = try finishCall(expr)
+            } else if (match([.dot])) {
+                let name = try consume(type: .identifier, message: "Expect property name after '.'.")
+                expr = Expr.Get(object: expr, name: name)
             } else {
                 break
             }
@@ -330,6 +355,15 @@ class Parser {
         }
         if match([.number, .string]) {
             return Expr.Literal(value: previous().literal)
+        }
+        if match([.Super]) {
+            let keyword = previous()
+            try consume(type: .dot, message: "Expect '.' after 'super'.")
+            let method = try consume(type: .identifier, message: "Expect superclass method name.")
+            return Expr.Super(keyword: keyword, method: method)
+        }
+        if match([.This]) {
+            return Expr.This(keyword: previous())
         }
         if match([.identifier]) {
             return Expr.Variable(name: previous())

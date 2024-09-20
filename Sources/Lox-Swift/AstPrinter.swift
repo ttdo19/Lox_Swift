@@ -28,6 +28,22 @@ public class AstPrinter {
 }
 
 extension AstPrinter: ExprVisitor {
+    func visitSuperExpr(_ expr: Expr.Super) throws -> String {
+        try parenthesize(name: "super", exprs: expr)
+    }
+    
+    func visitThisExpr(_ expr: Expr.This) throws -> String {
+        try parenthesize(name: "this", exprs: expr)
+    }
+    
+    func visitGetExpr(_ expr: Expr.Get) throws -> String {
+        try parenthesize(name: "set", exprs: expr.object)
+    }
+    
+    func visitSetExpr(_ expr: Expr.Set) throws -> String {
+        try parenthesize(name: "get", exprs: expr.object)
+    }
+    
     func visitCallExpr(_ expr: Expr.Call) throws -> String {
         try parenthesize(name: "call", exprs: expr.callee)
     }

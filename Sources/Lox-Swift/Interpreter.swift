@@ -6,7 +6,9 @@
 //
 
 import Foundation
+
 typealias Local = Dictionary<Expr, Int>
+typealias Method = Dictionary<String, LoxFunction>
 
 class Interpreter {
     static func addClockToGlobals() -> Environment {
@@ -56,6 +58,15 @@ class Interpreter {
             text = text.hasSuffix(".0") ? String(text.dropLast(2)): text
             return text
         }
+        if let loxClass = object as? LoxClass {
+            return loxClass.toString()
+        }
+        if let loxInstance = object as? LoxInstance {
+            return loxInstance.toString()
+        }
+        if let str = object as? String {
+            return str
+        }
         return String(describing: object)
     }
     
@@ -99,6 +110,30 @@ extension Interpreter: ExprVisitor {
             if (!isTruthy(left)) {return left}
         }
         return try evaluate(expr.right)
+    }
+    
+    func visitSetExpr(_ expr: Expr.Set) throws -> Any? {
+        if let object = try evaluate(expr.object) as? LoxInstance {
+            let value = try evaluate(expr.value)
+            object.set(expr.name, value)
+            return value
+        }
+        throw RuntimeError.cannotGetProperty(expr.name, "Only instances have fields.")
+    }
+    
+    func visitSuperExpr(_ expr: Expr.Super) throws -> Any? {
+        let distance = locals[expr]!
+        let superclass = try environment.getAt(distance, "super") as? LoxClass
+        
+        let object =  try environment.getAt(distance - 1, "this") as? LoxInstance
+        guard let method = superclass!.findMethod(expr.method.lexeme) else {
+            throw RuntimeError.cannotGetProperty(expr.method, "Undefined property '\(expr.method.lexeme)'.")
+        }
+        return method.bind(object!)
+    }
+    
+    func visitThisExpr(_ expr: Expr.This) throws -> Any? {
+        return try lookUpVariable(expr.keyword, expr)
     }
     
     func visitUnaryExpr(_ expr: Expr.Unary) throws -> Any? {
@@ -206,6 +241,13 @@ extension Interpreter: ExprVisitor {
         }
     }
     
+    func visitGetExpr(_ expr: Expr.Get) throws -> Any? {
+        if let object = try evaluate(expr.object) as? LoxInstance {
+            return try object.get(expr.name)
+        }
+        throw RuntimeError.cannotGetProperty(expr.name, "Only instances have properties.")
+    }
+    
     func isEqual(_ a: Any?, _ b: Any?) -> Bool {
         if (a == nil && b == nil) { return true }
         else if (a == nil) {return false}
@@ -236,7 +278,7 @@ extension Interpreter: StmtVisitor {
     }
     
     func visitFunctionStmt(_ stmt: Stmt.Function) throws -> Void {
-        let function = LoxFunction(declaration: stmt, closure: environment)
+        let function = LoxFunction(declaration: stmt, closure: environment, isInitialize: false)
         environment.define(name: stmt.name.lexeme, value: function)
     }
     
@@ -275,8 +317,39 @@ extension Interpreter: StmtVisitor {
         }
     }
     
-    func visitBlockStmt(_ stmt: Stmt.Block) throws -> () {
+    func visitBlockStmt(_ stmt: Stmt.Block) throws -> Void {
         try executeBlock(statements: stmt.statements, environment: Environment(enclosing: environment))
     }
     
+    func visitClassStmt(_ stmt: Stmt.Class) throws -> Void {
+        var superclass: LoxClass? = nil
+        if let superklass = stmt.superclass {
+            if let superclassEval = try evaluate(superklass) as? LoxClass {
+                superclass = superclassEval
+            } else {
+                throw RuntimeError.incorrectSuperclassType(superklass.name, "Superclass must be a class.")
+            }
+        }
+        
+        environment.define(name: stmt.name.lexeme, value: nil)
+        
+        if (stmt.superclass != nil) {
+            environment = Environment(enclosing: environment)
+            environment.define(name: "super", value: superclass)
+        }
+        
+        var methods = Method()
+        for method in stmt.methods {
+            let isInit = ( method.name.lexeme == "init")
+            let function = LoxFunction(declaration: method, closure: environment, isInitialize: isInit)
+            methods[method.name.lexeme] = function
+        }
+        
+        let klass = LoxClass(name: stmt.name.lexeme, superclass: superclass, methods: methods)
+        
+        if (superclass != nil) {
+            environment = environment.enclosing!
+        }
+        try environment.assign(stmt.name, klass)
+    }
 }

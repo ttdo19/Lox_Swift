@@ -85,6 +85,8 @@ public class Lox: ErrorReporting{
         case .mismatchedType(let token, let message): fallthrough
         case .undefinedVariable(let token, let message): fallthrough
         case .incorrectNumberArguments(let token, let message): fallthrough
+        case .cannotGetProperty(let token, let message): fallthrough
+        case .incorrectSuperclassType(let token, let message): fallthrough
         case .notCallable(let token, let message):
             error(at: token, message: message)
         case .unexpected(let message):

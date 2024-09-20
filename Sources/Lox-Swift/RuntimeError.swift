@@ -13,6 +13,8 @@ enum RuntimeError: Error {
     case undefinedVariable(Token, String)
     case notCallable(Token, String)
     case incorrectNumberArguments(Token, String)
+    case cannotGetProperty(Token, String)
+    case incorrectSuperclassType(Token, String)
 }
 
 enum Return: Error {
