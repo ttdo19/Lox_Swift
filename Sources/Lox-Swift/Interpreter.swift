@@ -67,6 +67,10 @@ class Interpreter {
         if let str = object as? String {
             return str
         }
+        if let str = object as? Bool {
+            if (str) {return "true"}
+            else {return "false"}
+        }
         return String(describing: object)
     }
     
@@ -254,7 +258,9 @@ extension Interpreter: ExprVisitor {
         else if let a = a as? Bool, let b = b as? Bool { return a == b}
         else if let a = a as? Double, let b = b as? Double { return a == b}
         else if let a = a as? String, let b = b as? String { return a == b}
-        
+        else if let a = a as? LoxClass, let b = b as? LoxClass { return a == b}
+        else if let a = a as? LoxInstance, let b = b as? LoxInstance { return a == b}
+        else if let a = a as? LoxFunction, let b = b as? LoxFunction { return a == b}
         return false
     }
     
@@ -334,7 +340,7 @@ extension Interpreter: StmtVisitor {
         environment.define(name: stmt.name.lexeme, value: nil)
         
         if (stmt.superclass != nil) {
-            environment = Environment(enclosing: environment)
+            environment = Environment(enclosing: self.environment)
             environment.define(name: "super", value: superclass)
         }
         

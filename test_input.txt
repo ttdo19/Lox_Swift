@@ -1,0 +1,451 @@
+// Test 1: Equality for number
+if (1 + 5 == 6) {
+    print("Test 1: Pass");
+} else {
+    print("Test 1: Fail");
+}
+
+///////////////////////////////////
+
+// Test 2: Equality for string
+if ("Hello" + " World" == "Hello World") {
+    print("Test 2: Pass");
+} else {
+    print("Test 2: Fail");
+}
+
+///////////////////////////////////
+
+// Test 3: Equality for double
+if (2.0 + 5.5 == 7.5) {
+    print("Test 3: Pass");
+} else {
+    print("Test 3: Fail");
+}
+
+///////////////////////////////////
+
+// Test 4: Inequality for number
+if (1 != 2) {
+    print("Test 4: Pass");
+} else {
+    print("Test 4: Fail");
+}
+
+///////////////////////////////////
+
+// Test 5: Inequality for string
+if ("cat" != "dog") {
+    print("Test 5: Pass");
+} else {
+    print("Test 5: Fail");
+}
+
+///////////////////////////////////
+
+// Test 6: Inequality between string and number
+if (123 != "123") {
+    print("Test 6: Pass");
+} else {
+    print("Test 6: Fail");
+}
+
+///////////////////////////////////
+
+// Test 7: Logical operators and
+if (true and false == false) {
+    print("Test 7: Pass");
+} else {
+    print("Test 7: Fail");
+}
+
+///////////////////////////////////
+
+// Test 8: Logical operators or
+if (true or false == true) {
+    print("Test 8: Pass");
+} else {
+    print("Test 8: Fail");
+}
+
+///////////////////////////////////
+
+// Test 9: Assignment for number
+var a = 2;
+var b = 5;
+if (a + b == 7) {
+    print("Test 9: Pass");
+} else {
+    print("Test 9: Fail");
+}
+
+///////////////////////////////////
+
+// Test 10: Assignment for string
+var a = "Before";
+a = "After";
+if (a == "After") {
+    print("Test 10: Pass");
+} else {
+    print("Test 10: Fail");
+}
+
+///////////////////////////////////
+
+// Test 11: Precedence and grouping
+var num1 = 20;
+var num2 = 30;
+var average = (num1 + num2) / 2;
+if (average == 25) {
+    print("Test 11: Pass");
+} else {
+    print("Test 11: Fail");
+}
+
+///////////////////////////////////
+
+// Test 12: Precedence and grouping
+var num3 = num1 + num2 / 2;
+if (num3 == 35) {
+    print("Test 12: Pass");
+} else {
+    print("Test 12: Fail");
+}
+
+///////////////////////////////////
+
+// Test 13: Control Flow
+if (1 + 3 != 4) {
+    print("Test 13: Fail");
+}
+else {
+    print("Test 13: Pass");
+}
+
+///////////////////////////////////
+
+// Test 14: Control Flow
+var a = 1;
+var b = 10;
+while (a < 5) {
+    b = b * 2;
+    a = a + 1;
+}
+if (b == 160) {
+    print("Test 14: Pass");
+} else {
+    print("Test 14: Fail");
+}
+
+///////////////////////////////////
+
+// Test 15: Control Flow
+b = 10;
+for (var a = 1; a < 10; a = a + 1) {
+    b = b * 2;
+}
+if (b == 5120) {
+    print("Test 15: Pass");
+} else {
+    print("Test 15: Fail");
+}
+
+///////////////////////////////////
+
+// Test 16: Function
+fun add(a, b) {
+    return a + b;
+}
+
+var c = add(15, 20);
+if (c == 35) {
+    print("Test 16: Pass");
+} else {
+    print("Test 16: Fail");
+}
+
+///////////////////////////////////
+
+// Test 17: Function
+
+fun fib(n) {
+    if (n <= 1) return n;
+    return fib(n - 2) + fib(n - 1);
+}
+
+if (fib(10) == 55) {
+    print("Test 17: Pass");
+} else {
+    print("Test 17: Fail");
+}
+
+
+///////////////////////////////////
+
+// Test 18: Closure
+fun addPair(a, b) {
+    return a + b;
+}
+
+fun identity(a) {
+    return a;
+}
+
+var c = identity(addPair)(10, 20);
+if (c == 30) {
+    print("Test 18: Pass");
+} else {
+    print("Test 18: Fail");
+}
+
+///////////////////////////////////
+
+// Test 19: Closure
+fun returnFunction() {
+    var outside = "outside";
+
+    fun inner() {
+        return outside;
+    }
+
+    return inner;
+}
+
+var fn = returnFunction();
+if (fn() == "outside") {
+    print("Test 19: Pass");
+} else {
+    print("Test 19: Fail");
+}
+
+///////////////////////////////////
+
+// Test 20: Scope
+{
+    var a = "first";
+}
+{
+    var a = "second";
+    if (a == "second") {
+        print("Test 20: Pass");
+    } else {
+        print("Test 20: Fail");
+    }
+}
+
+///////////////////////////////////
+
+// Test 21: Scope
+var global = "outside";
+{
+    var local = "inside";
+    if (global + local == "outsideinside") {
+        print("Test 21: Pass");
+    } else {
+        print("Test 21: Fail");
+    }
+}
+
+///////////////////////////////////
+
+// Test 22: Scope
+var a = "global a";
+var b = "global b";
+var c = "global c";
+var inner_most = false;
+var inner = false;
+{
+    var a = "outer a";
+    var b = "outer b";
+    {
+        var a = "inner a";
+        if (a == "inner a" and b == "outer b" and c == "global c") {
+            inner_most = true;
+        }
+    }
+    if (a =="outer a" and b == "outer b" and c == "global c" and inner_most == true) {
+        inner = true;
+    }
+}
+if (a == "global a" and b == "global b" and c == "global c" and inner == true) {
+    print("Test 22: Pass");
+} else {
+    print("Test 22: Fail");
+}
+
+// Test 23: Scope
+var a = 1;
+{
+    var b = a + 2;
+    if (b == 3) {
+        print("Test 23: Pass");
+    } else {
+        print("Test 23: Fail");
+    }
+}
+
+///////////////////////////////////
+
+// Test 24: Class
+class Breakfast {
+    cook() {
+        return "Eggs a-fryin'!";
+    }
+
+    serve(who) {
+        return "Enjoy your breakfast, " + who + ".";
+    }
+}
+
+var breakfast = Breakfast();
+var result = breakfast.serve("Trang");
+if (result == "Enjoy your breakfast, Trang.") {
+    print("Test 24: Pass");
+} else {
+    print("Test 24: Fail");
+}
+
+///////////////////////////////////
+
+// Test 25: Class
+class Person {
+    sayName() {
+        return this.name;
+    }
+}
+
+var jane = Person();
+jane.name = "Jane";
+
+var bill = Person();
+bill.name = "Bill";
+
+bill.sayName = jane.sayName;
+if (bill.sayName() == "Jane") {
+    print("Test 25: Pass");
+} else {
+    print("Test 25: Fail");
+}
+
+///////////////////////////////////
+
+// Test 26: Class
+class Dessert {}
+
+fun bake(cake) {
+    return "Let's bake a " + cake;
+}
+
+var a = Dessert();
+a.function = bake;
+var b = a.function("Black Forest Cake");
+if (b == "Let's bake a Black Forest Cake") {
+    print("Test 26: Pass");
+} else {
+    print("Test 26: Fail");
+}
+
+///////////////////////////////////
+
+// Test 27: Class
+class Cake {
+    taste() {
+        var adjective = "delicious";
+        return "The " + this.flavor + " cake is " + adjective + "!";
+    }
+}
+
+var cake = Cake();
+cake.flavor = "German chocolate";
+if (cake.taste() == "The German chocolate cake is delicious!") {
+    print("Test 27: Pass");
+} else {
+    print("Test 27: Fail");
+}
+
+///////////////////////////////////
+
+// Test 28: Class
+class Circle {
+    init(radius) {
+        this.radius = radius;
+    }
+
+    area() {
+        return 3.141592653 * this.radius * this.radius;
+    }
+}
+
+var circle = Circle(4);
+if (circle.area() == 3.141592653 * 4 * 4) {
+    print("Test 28: Pass");
+} else {
+    print("Test 28: Fail");
+}
+
+///////////////////////////////////
+
+// Test 29: Class
+
+class Person {
+    init(name, age) {
+        this.name = name;
+        this.age = age;
+    }
+    
+    introduce() {
+        return "I am " + this.name + " and I am " + this.age + " years old.";
+    }
+}
+
+var d = Person("Trang", "23");
+if (d.introduce() == "I am Trang and I am 23 years old." ) {
+    print("Test 29: Pass");
+} else {
+    print("Test 29: Fail");
+}
+
+///////////////////////////////////
+
+// Test 30: Inheritance
+
+class Doughnut {
+    cook() {
+        return "Fry until golden brown.";
+    }
+}
+
+class BostonCream < Doughnut {
+    cook() {
+        return super.cook();
+    }
+}
+
+var result = BostonCream().cook();
+if (result = "Fry until golden brown.") {
+    print("Test 30: Pass");
+} else {
+    print("Test 30: Fail");
+}
+
+///////////////////////////////////
+
+// Test 31: Inheritance
+
+class Student < Person {
+    init(name, age, course) {
+        super.init(name, age);
+        this.course = course;
+    }
+    
+    introduce() {
+        return "I am " + this.name + " and I am " + this.age + " years old. I am in " + this.course + " class.";
+    }
+}
+
+var e = Student("Trang", "23", "CS403");
+if (e.introduce() == "I am Trang and I am 23 years old. I am in CS403 class.") {
+    print("Test 31: Pass");
+} else {
+    print("Test 31: Fail");
+}

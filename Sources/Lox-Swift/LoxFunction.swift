@@ -46,3 +46,9 @@ class LoxFunction: LoxCallable {
         return nil
     }
 }
+
+extension LoxFunction: Equatable {
+    static func == (lhs: LoxFunction, rhs: LoxFunction) -> Bool {
+        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+    }
+}

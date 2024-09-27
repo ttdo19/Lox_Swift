@@ -51,3 +51,9 @@ class LoxClass : LoxCallable {
     }
     
 }
+
+extension LoxClass: Equatable {
+    static func == (lhs: LoxClass, rhs: LoxClass) -> Bool {
+        return lhs.name == rhs.name
+    }
+}

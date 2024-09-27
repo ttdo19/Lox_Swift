@@ -38,3 +38,9 @@ class LoxInstance {
     }
     
 }
+
+extension LoxInstance: Equatable {
+    static func == (lhs: LoxInstance, rhs: LoxInstance) -> Bool {
+        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+    }
+}

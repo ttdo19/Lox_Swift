@@ -71,11 +71,10 @@ class Resolver {
     func declare(_ name: Token) {
         guard (!scopes.isEmpty) else { return }
         
-        var currentScope = scopes[scopes.count - 1]
-        if (currentScope.keys.contains(name.lexeme)) {
+        if (scopes[scopes.count - 1].keys.contains(name.lexeme)) {
             errorReporting.error(at: name, message: "Already a variable with this name in this scope.")
         }
-        currentScope[name.lexeme] = false
+        scopes[scopes.count - 1][name.lexeme] = false
     }
     
     func define(_ name: Token) {
@@ -87,6 +86,7 @@ class Resolver {
         for index in stride(from: scopes.count-1, through: 0, by: -1) {
             if (scopes[index].keys.contains(name.lexeme)) {
                 interpreter.resolve(expr, scopes.count-1-index)
+                return
             }
         }
     }
