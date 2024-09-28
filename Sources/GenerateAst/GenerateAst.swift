@@ -58,6 +58,18 @@ class GenerateAst {
         }
         
         writer.println("}")
+        
+        if (baseName == "Expr") {
+            writer.println()
+            writer.println("extension \(baseName): Hashable {")
+            writer.println("    static func == (lhs: \(baseName), rhs: \(baseName)) -> Bool {")
+            writer.println("        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)")
+            writer.println("    }")
+            writer.println("    func hash(into hasher: inout Hasher) {")
+            writer.println("        return ObjectIdentifier(self).hash(into: &hasher)")
+            writer.println("    }")
+            writer.println("}")
+        }
     }
     
     func defineType(writer: PrintWriter, baseName: String, className: String, fieldString: String) {
