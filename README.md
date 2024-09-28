@@ -27,5 +27,5 @@ swift run -c release GenerateAst [path_where_you_want_to_store_the_output]
 The test input file is test_input.txt. To run it and put the result in the test_output.txt file, run: 
 
 ```
-swift run -c release LoxCLI test_input.txt
+swift run -c release LoxCLI test_input.txt > test_output.txt
 ```
